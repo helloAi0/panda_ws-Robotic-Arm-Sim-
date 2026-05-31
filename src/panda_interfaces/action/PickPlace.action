@@ -1,0 +1,22 @@
+# PickPlace.action
+# Action for executing a complete pick-and-place operation
+# Goal: what to pick and where to place
+# Result: did it succeed?
+# Feedback: current status during execution
+
+# ---- GOAL (sent by client to start the action) ----
+geometry_msgs/Pose pick_pose      # Target pick pose
+geometry_msgs/Pose place_pose     # Target place pose
+string object_id                  # Which object
+float32 grasp_width               # How wide to open gripper
+bool use_cartesian_path           # Plan straight-line path or OMPL?
+---
+# ---- RESULT (sent when action completes) ----
+bool success                      # True if pick+place succeeded
+string message                    # Human-readable status
+float32 execution_time            # How long it took (seconds)
+---
+# ---- FEEDBACK (sent periodically during execution) ----
+string current_phase              # "moving_to_pick", "grasping", "moving_to_place", "releasing"
+float32 progress_percent          # 0.0 to 100.0
+geometry_msgs/Pose current_pose   # Where the end effector is right now

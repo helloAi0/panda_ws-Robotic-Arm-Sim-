@@ -1,0 +1,81 @@
+# ros2_controllers.yaml
+# Loaded by the gazebo_ros2_control plugin at simulation startup
+# Defines what controllers are available and their parameters
+
+controller_manager:
+  ros__parameters:
+    update_rate: 1000  # Hz — how fast the controller manager runs
+                       # 1000Hz is standard for position control
+    
+    # Register the joint state broadcaster
+    # This publishes /joint_states topic (current positions of all joints)
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    
+    # Register the arm trajectory controller
+    # This accepts JointTrajectory goals and executes them
+    panda_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    
+    # Register the gripper action controller
+    # This handles open/close gripper commands
+    panda_hand_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+# Configuration for the arm trajectory controller
+panda_arm_controller:
+  ros__parameters:
+    joints:
+      - panda_joint1
+      - panda_joint2
+      - panda_joint3
+      - panda_joint4
+      - panda_joint5
+      - panda_joint6
+      - panda_joint7
+    
+    command_interfaces:
+      - position         # We command positions (angles in radians)
+    
+    state_interfaces:
+      - position
+      - velocity
+    
+    # Allow partial joint goals (not all joints need to be specified)
+    allow_partial_joints_goal: true
+    
+    # Stop trajectory on large deviation from planned path
+    # 0.01 rad ≈ 0.57 degrees — tight tolerance for safe operation
+    constraints:
+      stopped_velocity_tolerance: 0.05  # rad/s — consider "stopped" below this
+      goal_time: 10.0                   # seconds — max time to reach goal
+      panda_joint1: {goal: 0.05}        # rad — acceptable position error at goal
+      panda_joint2: {goal: 0.05}
+      panda_joint3: {goal: 0.05}
+      panda_joint4: {goal: 0.05}
+      panda_joint5: {goal: 0.05}
+      panda_joint6: {goal: 0.05}
+      panda_joint7: {goal: 0.05}
+
+
+# Configuration for the gripper controller
+panda_hand_controller:
+  ros__parameters:
+    joints:
+      - panda_finger_joint1
+      - panda_finger_joint2
+    
+    command_interfaces:
+      - position
+    
+    state_interfaces:
+      - position
+      - velocity
+    
+    allow_partial_joints_goal: true
+    
+    constraints:
+      goal_time: 5.0
+      panda_finger_joint1: {goal: 0.01}
+      panda_finger_joint2: {goal: 0.01}
