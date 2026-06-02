@@ -1,200 +1,113 @@
 #!/usr/bin/env python3
 """
-motion_test.py
+motion_test.py — Direct Joint Trajectory Controller version
 
-First motion test for the Franka Panda arm using MoveIt2.
-This node commands the arm to move to specific poses.
-
-Run AFTER:
-  Terminal 1: ros2 launch panda_gazebo gazebo.launch.py
-  Terminal 2: ros2 launch panda_moveit_config moveit.launch.py
-  Terminal 3: ros2 run panda_manipulation motion_test
+Bypasses MoveGroup and sends trajectories directly to
+panda_arm_controller's FollowJointTrajectory action server.
+This is how ros2_control works at its core.
 """
 
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from rclpy.duration import Duration
-
-from moveit_msgs.action import MoveGroup
-from moveit_msgs.msg import (
-    MotionPlanRequest,
-    WorkspaceParameters,
-    RobotState,
-    Constraints,
-    JointConstraint,
-    MoveItErrorCodes,
-)
-from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Vector3
+from builtin_interfaces.msg import Duration
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from control_msgs.action import FollowJointTrajectory
 
 
 class MotionTestNode(Node):
+
+    JOINT_NAMES = [
+        'panda_joint1', 'panda_joint2', 'panda_joint3',
+        'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7'
+    ]
 
     def __init__(self):
         super().__init__('motion_test_node')
         self.get_logger().info('Motion Test Node starting...')
 
-        # Action client — talks to move_group's MoveAction server
-        self._action_client = ActionClient(
+        self._client = ActionClient(
             self,
-            MoveGroup,
-            '/move_group'
+            FollowJointTrajectory,
+            '/panda_arm_controller/follow_joint_trajectory'
         )
 
-        # Store current joint states
-        self._current_joint_states = None
-        self._joint_state_sub = self.create_subscription(
-            JointState,
-            '/joint_states',
-            self._joint_state_callback,
-            10
+        self.get_logger().info('Waiting for panda_arm_controller...')
+        self._client.wait_for_server()
+        self.get_logger().info('Controller ready!')
+
+        self.run_sequence()
+
+    def send_trajectory(self, positions, duration_sec, description):
+        """Send a single-point trajectory — move to target angles."""
+        self.get_logger().info(f'Moving: {description}')
+
+        traj = JointTrajectory()
+        traj.joint_names = self.JOINT_NAMES
+
+        point = JointTrajectoryPoint()
+        point.positions = positions
+        point.velocities = [0.0] * 7
+        point.accelerations = [0.0] * 7
+
+        # CRITICAL: time_from_start must be > 0
+        # This tells the controller HOW LONG to take to reach this point
+        point.time_from_start = Duration(
+            sec=int(duration_sec),
+            nanosec=int((duration_sec % 1) * 1e9)
         )
+        traj.points = [point]
 
-        # Wait for action server
-        self.get_logger().info('Waiting for move_group action server...')
-        self._action_client.wait_for_server()
-        self.get_logger().info('move_group action server found!')
+        goal = FollowJointTrajectory.Goal()
+        goal.trajectory = traj
+        goal.goal_time_tolerance = Duration(sec=2, nanosec=0)
 
-        # Wait for first joint states
-        self.get_logger().info('Waiting for joint states...')
-        while self._current_joint_states is None:
-            rclpy.spin_once(self, timeout_sec=0.1)
-        self.get_logger().info('Joint states received!')
+        future = self._client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self, future)
 
-        # Run test sequence
-        self.run_motion_sequence()
-
-    def _joint_state_callback(self, msg):
-        self._current_joint_states = msg
-
-    def move_to_joint_angles(self, joint_positions: dict, description: str):
-        """
-        Command the arm to move to specific joint angles.
-
-        joint_positions: dict of {joint_name: angle_radians}
-        description: human-readable label for this motion
-        """
-        self.get_logger().info(f'Planning motion: {description}')
-
-        # Build the goal
-        goal = MoveGroup.Goal()
-
-        # ── Motion plan request ───────────────────────────────────────────
-        request = MotionPlanRequest()
-        request.group_name = 'panda_arm'  # Must match SRDF group name
-        request.num_planning_attempts = 5
-        request.allowed_planning_time = 5.0  # seconds
-        request.max_velocity_scaling_factor = 0.3   # 30% of max speed (safe)
-        request.max_acceleration_scaling_factor = 0.3
-
-        # ── Workspace bounds ──────────────────────────────────────────────
-        # Tell planner the volume to work in (meters)
-        workspace = WorkspaceParameters()
-        workspace.header.frame_id = 'panda_link0'
-        workspace.min_corner = Vector3(x=-1.0, y=-1.0, z=-1.0)
-        workspace.max_corner = Vector3(x=1.0,  y=1.0,  z=1.0)
-        request.workspace_parameters = workspace
-
-        # ── Start state = current state ───────────────────────────────────
-        # Tell MoveIt where the arm is RIGHT NOW
-        start_state = RobotState()
-        start_state.joint_state = self._current_joint_states
-        request.start_state = start_state
-
-        # ── Goal constraints = target joint angles ────────────────────────
-        # Each joint gets a JointConstraint specifying target angle
-        joint_constraints = []
-        for joint_name, position in joint_positions.items():
-            constraint = JointConstraint()
-            constraint.joint_name = joint_name
-            constraint.position = position
-            constraint.tolerance_above = 0.05  # radians tolerance
-            constraint.tolerance_below = 0.05
-            constraint.weight = 1.0
-            joint_constraints.append(constraint)
-
-        goal_constraints = Constraints()
-        goal_constraints.joint_constraints = joint_constraints
-        request.goal_constraints = [goal_constraints]
-
-        goal.request = request
-        goal.planning_options.plan_only = False       # plan AND execute
-        goal.planning_options.replan = True
-        goal.planning_options.replan_attempts = 3
-
-        # ── Send goal ────────────────────────────────────────────────────
-        self.get_logger().info(f'Sending goal: {description}')
-        send_goal_future = self._action_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, send_goal_future)
-
-        goal_handle = send_goal_future.result()
-        if not goal_handle.accepted:
-            self.get_logger().error('Goal rejected!')
+        handle = future.result()
+        if not handle.accepted:
+            self.get_logger().error('Goal REJECTED')
             return False
 
-        self.get_logger().info('Goal accepted, executing...')
-
-        # Wait for result
-        result_future = goal_handle.get_result_async()
+        self.get_logger().info(f'Executing... (wait {duration_sec}s)')
+        result_future = handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
 
-        result = result_future.result().result
-        error_code = result.error_code.val
-
-        if error_code == MoveItErrorCodes.SUCCESS:
+        code = result_future.result().result.error_code
+        if code == FollowJointTrajectory.Result.SUCCESSFUL:
             self.get_logger().info(f'SUCCESS: {description}')
             return True
         else:
-            self.get_logger().error(
-                f'FAILED: {description} — error code: {error_code}')
+            self.get_logger().error(f'FAILED code={code}: {description}')
             return False
 
-    def run_motion_sequence(self):
-        """Execute a sequence of test motions."""
+    def run_sequence(self):
+        import time
 
         self.get_logger().info('=' * 50)
-        self.get_logger().info('STARTING MOTION TEST SEQUENCE')
+        self.get_logger().info('STARTING MOTION SEQUENCE')
         self.get_logger().info('=' * 50)
 
-        # ── Motion 1: Move to extended position ──────────────────────────
-        # Arm stretched upward — tests full range
-        success = self.move_to_joint_angles(
-            {
-                'panda_joint1': 0.0,
-                'panda_joint2': -0.3,
-                'panda_joint3': 0.0,
-                'panda_joint4': -1.5,
-                'panda_joint5': 0.0,
-                'panda_joint6': 1.2,
-                'panda_joint7': 0.785,
-            },
-            'Move to extended position'
+        # Motion 1: Extended pose
+        ok = self.send_trajectory(
+            positions=[0.0, -0.3, 0.0, -1.5, 0.0, 1.2, 0.785],
+            duration_sec=4.0,
+            description='Move to extended pose'
         )
-
-        if not success:
-            self.get_logger().error('First motion failed. Stopping.')
+        if not ok:
             return
 
-        # Wait 2 seconds between motions
-        import time
-        time.sleep(2.0)
+        time.sleep(1.0)
 
-        # ── Motion 2: Move to ready/home position ─────────────────────────
-        success = self.move_to_joint_angles(
-            {
-                'panda_joint1': 0.0,
-                'panda_joint2': -0.785398,
-                'panda_joint3': 0.0,
-                'panda_joint4': -2.356194,
-                'panda_joint5': 0.0,
-                'panda_joint6': 1.570796,
-                'panda_joint7': 0.785398,
-            },
-            'Move to home/ready position'
+        # Motion 2: Home/ready pose
+        ok = self.send_trajectory(
+            positions=[0.0, -0.785398, 0.0, -2.356194, 0.0, 1.570796, 0.785398],
+            duration_sec=4.0,
+            description='Return to home pose'
         )
 
-        if success:
+        if ok:
             self.get_logger().info('=' * 50)
             self.get_logger().info('MOTION SEQUENCE COMPLETE!')
             self.get_logger().info('Both motions executed successfully.')

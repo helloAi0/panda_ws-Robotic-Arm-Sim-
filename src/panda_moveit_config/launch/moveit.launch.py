@@ -41,13 +41,14 @@ def generate_launch_description():
 
             # ── Planning plugin ───────────────────────────────────────────
             # Must be set directly — not via YAML file loading
-            {'planning_plugin': 'ompl_interface/OMPLPlanner'},
+            {'planning_plugin': 'chomp_interface/CHOMPPlanner'},
             {'request_adapters': ' '.join([
                 'default_planner_request_adapters/AddTimeOptimalParameterization',
                 'default_planner_request_adapters/FixWorkspaceBounds',
                 'default_planner_request_adapters/FixStartStateBounds',
                 'default_planner_request_adapters/FixStartStateCollision',
             ])},
+
             {'start_state_max_bounds_error': 0.1},
 
             # ── Kinematics ────────────────────────────────────────────────
