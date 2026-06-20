@@ -128,6 +128,23 @@ def generate_launch_description():
         )
     )
 
+
+    # Static TF: world → camera_optical_frame
+    # This tells TF2 exactly where the camera is in the world
+    # Position matches the camera model pose in sorting_world.world
+    camera_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_tf_publisher',
+        arguments=[
+            '0.5', '0', '1.5',      # x y z translation
+            '-1.5708', '0', '-1.5708',  # roll pitch yaw
+            'world',                  # parent frame
+            'camera_optical_frame'    # child frame
+        ],
+        output='screen',
+    )
+
     return LaunchDescription([
         robot_state_publisher,
         gzserver,
@@ -136,4 +153,5 @@ def generate_launch_description():
         on_spawn_jsb,
         on_jsb_arm,
         on_arm_hand,
+        camera_tf,
     ])

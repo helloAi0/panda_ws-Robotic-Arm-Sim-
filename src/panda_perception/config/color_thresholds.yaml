@@ -1,0 +1,15 @@
+# HSV color thresholds for object detection
+# Tune these if detection is unreliable
+# HSV in OpenCV: H=[0-179], S=[0-255], V=[0-255]
+color_thresholds:
+  red:
+    lower1: [0,   100, 100]
+    upper1: [10,  255, 255]
+    lower2: [165, 100, 100]
+    upper2: [179, 255, 255]
+  green:
+    lower: [40, 100, 100]
+    upper: [80, 255, 255]
+  blue:
+    lower: [100, 100, 100]
+    upper: [130, 255, 255]
