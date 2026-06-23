@@ -20,6 +20,7 @@ setup(
     entry_points={
         'console_scripts': [
             'motion_test = panda_manipulation.motion_test:main',
+            'pick_and_place = panda_manipulation.pick_and_place:main',
         ],
     },
 )
