@@ -26,7 +26,6 @@
 
     <!-- Inline ground plane — no model:// download needed -->
     <model name="ground_plane">
-      <static>true</static>
       <link name="link">
         <collision name="collision">
           <geometry>
@@ -59,7 +58,6 @@
 
     <!-- Work table -->
     <model name="work_table">
-      <static>true</static>
       <pose>0.5 0 0.4 0 0 0</pose>
       <link name="table_top">
         <collision name="collision">
@@ -77,7 +75,6 @@
 
     <!-- Sorting bin: RED -->
     <model name="bin_red">
-      <static>true</static>
       <pose>0.3 0.4 0.42 0 0 0</pose>
       <link name="bin_base">
         <collision name="collision">
@@ -95,7 +92,6 @@
 
     <!-- Sorting bin: GREEN -->
     <model name="bin_green">
-      <static>true</static>
       <pose>0.3 0.0 0.42 0 0 0</pose>
       <link name="bin_base">
         <collision name="collision">
@@ -113,7 +109,6 @@
 
     <!-- Sorting bin: BLUE -->
     <model name="bin_blue">
-      <static>true</static>
       <pose>0.3 -0.4 0.42 0 0 0</pose>
       <link name="bin_base">
         <collision name="collision">
@@ -131,7 +126,7 @@
 
     <!-- Test object: red cube on table surface -->
     <model name="red_cube_1">
-      <pose>0.5 0.1 0.445 0 0 0</pose>
+      <pose>0.55 0.18 0.445 0 0 0</pose>
       <link name="cube_link">
         <inertial>
           <mass>0.1</mass>
@@ -156,7 +151,7 @@
 
     <!-- Green cube -->
     <model name="green_cube_1">
-      <pose>0.5 -0.1 0.445 0 0 0</pose>
+      <pose>0.55 -0.18 0.445 0 0 0</pose>
       <link name="cube_link">
         <inertial>
           <mass>0.1</mass>
@@ -180,7 +175,7 @@
 
     <!-- Blue cube -->
     <model name="blue_cube_1">
-      <pose>0.45 0.0 0.445 0 0 0</pose>
+      <pose>0.35 0.0 0.445 0 0 0</pose>
       <link name="cube_link">
         <inertial>
           <mass>0.1</mass>

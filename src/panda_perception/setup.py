@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'color_detector = panda_perception.color_detector:main',
+            'scene_markers = panda_perception.scene_markers:main',
         ],
     },
 )

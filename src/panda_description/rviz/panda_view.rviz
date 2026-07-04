@@ -12,11 +12,22 @@ Visualization Manager:
       Enabled: true
       Name: RobotModel
     - Class: rviz_default_plugins/TF
-      Enabled: true
+      Enabled: false
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: SceneMarkers
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /scene_markers
+      Value: true
     - Class: rviz_default_plugins/Grid
       Enabled: true
       Name: Grid
