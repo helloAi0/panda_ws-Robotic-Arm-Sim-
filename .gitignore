@@ -1,3 +1,47 @@
+# ROS 2 build artifacts
 build/
 install/
 log/
+.colcon/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+*.egg
+
+# ROS logs
+~/.ros/
+*.ros/
+
+# Gazebo
+~/.gazebo/
+/tmp/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large files — don't commit these
+*.bag
+*.db
+*.sqlite
+
+# Environment
+.env
+setup_local.sh
